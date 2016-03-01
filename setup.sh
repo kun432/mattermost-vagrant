@@ -27,11 +27,11 @@ source /etc/sysconfig/clock
 # setup
 yum -y install http://yum.postgresql.org/9.4/redhat/rhel-6-x86_64/pgdg-redhat94-9.4-1.noarch.rpm
 yum -y install postgresql94-server postgresql94-contrib
+/usr/pgsql-9.4/bin/postgresql94-setup initdb
 systemctl enable postgresql-9.4.service
 systemctl start postgresql-9.4.service
 
 # create database and user
-/usr/pgsql-9.4/bin/postgresql94-setup initdb
 sudo -i -u postgres psql -c "CREATE DATABASE mattermost;"
 sudo -i -u postgres psql -c "CREATE USER mmuser WITH PASSWORD 'mmuser_password';"
 sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE mattermost to mmuser;"

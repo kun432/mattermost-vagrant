@@ -3,11 +3,13 @@ Description=Mattermost
 After=syslog.target network.target
 
 [Service]
-Type=simple
-WorkingDirectory=/opt/mattermost/bin
 User=mattermost
+WorkingDirectory=/opt/mattermost/bin
 ExecStart=/opt/mattermost/bin/platform
 PIDFile=/var/spool/mattermost/pid/master.pid
+Restart=always
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
+

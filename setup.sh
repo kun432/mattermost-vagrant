@@ -2,8 +2,10 @@
 
 MATTERMOST_VERSION="2.1.0"
 
+MATTERMOST_DB_TYPE="mysql"   # 'mysql' or 'postgres'
+
 #-------------------------------------------------------------------------------
-# Set up CentOS 7.2
+# Setup CentOS 7.2
 #-------------------------------------------------------------------------------
 
 # setup
@@ -11,39 +13,19 @@ yum upgrade -y
 yum groupinstall -y "Development Tools"
 yum install -y vim wget tree lsof tcpdump  # i need this...
 
-# configure
-cat << TIME > /etc/sysconfig/clock
-ZONE="Asia/Tokyo"
-UTC="false"
-TIME
-source /etc/sysconfig/clock
-/bin/cp -f /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
-
 #-------------------------------------------------------------------------------
-# Set up Database Server (Postgres 9.4.x)
-#   @see http://docs.mattermost.com/install/prod-rhel-7.html#set-up-database-server
+# Setup Database Server (MySQL 5.7.x / Postgresql 9.4.x)
 #-------------------------------------------------------------------------------
 
-# setup
-yum -y install http://yum.postgresql.org/9.4/redhat/rhel-6-x86_64/pgdg-redhat94-9.4-1.noarch.rpm
-yum -y install postgresql94-server postgresql94-contrib
-/usr/pgsql-9.4/bin/postgresql94-setup initdb
-systemctl enable postgresql-9.4.service
-systemctl start postgresql-9.4.service
-
-# create database and user
-sudo -i -u postgres psql -c "CREATE DATABASE mattermost;"
-sudo -i -u postgres psql -c "CREATE USER mmuser WITH PASSWORD 'mmuser_password';"
-sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE mattermost to mmuser;"
-
-# configure
-cp /vagrant/conf/pgsql/postgresql.conf /var/lib/pgsql/9.4/data/postgresql.conf
-cp /vagrant/conf/pgsql/pg_hba.conf /var/lib/pgsql/9.4/data/pg_hba.conf
-
-systemctl restart postgresql-9.4.service
+if [[ ${MATTERMOST_DB_TYPE} = 'mysql' ]]; then
+  sh /vagrant/setup_mysql57.sh
+fi
+if [[ ${MATTERMOST_DB_TYPE} = 'postgres' ]]; then
+  sh /vagrant/setup_postgres94.sh
+fi
 
 #-------------------------------------------------------------------------------
-# Set up Mattermost Server (2.0.0)
+# Setup Mattermost Server (2.x)
 #   @see http://docs.mattermost.com/install/prod-rhel-7.html#set-up-mattermost-server
 #-------------------------------------------------------------------------------
 
@@ -59,7 +41,13 @@ chown -R mattermost:mattermost /opt/mattermost
 chmod -R g+w /opt/mattermost
 
 # configure
-cp /vagrant/conf/mattermost/config.json /opt/mattermost/config/config.json
+MATTERMOST_CONFIG_DIR='/opt/mattermost/config'
+if [[ ${MATTERMOST_DB_TYPE} = 'mysql' ]]; then
+  cp /vagrant/conf/mattermost/mysql/config.json ${MATTERMOST_CONFIG_DIR}/config.json
+fi
+if [[ ${MATTERMOST_DB_TYPE} = 'postgres' ]]; then
+  cp /vagrant/conf/mattermost/postgres/config.json ${MATTERMOST_CONFIG_DIR}/config.json
+fi
 
 # service setup
 cp /vagrant/conf/systemd/mattermost.service /etc/systemd/system/mattermost.service
@@ -69,7 +57,7 @@ systemctl start mattermost.service
 systemctl enable mattermost.service
 
 #-------------------------------------------------------------------------------
-# Set up Nginx Server
+# Setup Nginx Server
 #   @see http://docs.mattermost.com/install/prod-rhel-7.html#set-up-nginx-server
 #-------------------------------------------------------------------------------
 
@@ -93,8 +81,25 @@ mv /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.bak
 systemctl restart nginx.service
 
 #-------------------------------------------------------------------------------
+# Japanese Localization
+#-------------------------------------------------------------------------------
 
-echo '--------------------------------------------------------------'
+# TimeZone settings
+cat << TIME > /etc/sysconfig/clock
+ZONE="Asia/Tokyo"
+UTC="false"
+TIME
+source /etc/sysconfig/clock
+/bin/cp -f /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
+
+# use N-gram FULLTEXT Index sample
+#   (only MySQL 5.7.9+, postgres and others are not yet...)
+#if [[ ${MATTERMOST_DB_TYPE} = 'mysql' ]]; then
+#    mysql mattermost -u mmuser -pmmuser_password -e "ALTER TABLE Posts DROP INDEX idx_posts_message_txt;"
+#    mysql mattermost -u mmuser -pmmuser_password -e "ALTER TABLE Posts ADD FULLTEXT INDEX idx_posts_message_txt (Message) WITH PARSER ngram COMMENT 'ngram-index';"
+#fi
+
+echo '----------------------------------------------------------------'
 echo 'Setup complete!!'
-echo '  please access: http://standalone-mattermost.vagrant.local/   '
-echo '--------------------------------------------------------------'
+echo 'please access to : http://standalone-mattermost.vagrant.local/  '
+echo '----------------------------------------------------------------'

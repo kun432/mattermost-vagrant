@@ -31,8 +31,9 @@ fi
 
 # download
 cd /opt
-wget https://github.com/mattermost/platform/releases/download/v${MATTERMOST_VERSION}/mattermost.tar.gz
-tar -xvzf mattermost.tar.gz
+#wget https://github.com/mattermost/platform/releases/download/v${MATTERMOST_VERSION}/mattermost.tar.gz
+#tar -xvzf mattermost.tar.gz
+sh /vagrant/setup_developer.sh
 mkdir -p /opt/mattermost/data
 
 # add unix user

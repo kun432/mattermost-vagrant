@@ -1,6 +1,6 @@
 #!/bin/sh
 
-MATTERMOST_VERSION="2.1.0"
+MATTERMOST_VERSION="3.1.0"
 
 MATTERMOST_DB_TYPE="mysql"   # 'mysql' or 'postgres'
 
@@ -31,7 +31,7 @@ fi
 
 # download
 cd /opt
-wget https://github.com/mattermost/platform/releases/download/v${MATTERMOST_VERSION}/mattermost.tar.gz
+wget https://releases.mattermost.com/${MATTERMOST_VERSION}/mattermost-team-${MATTERMOST_VERSION}-linux-amd64.tar.gz -O mattermost.tar.gz
 tar -xvzf mattermost.tar.gz
 mkdir -p /opt/mattermost/data
 
